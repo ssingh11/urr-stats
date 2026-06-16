@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from flask import Flask, request, jsonify, Response
 
 app = Flask(__name__)
-DB = os.environ.get("DB_PATH", "urr_stats.db")
+DB = os.environ.get("DB_PATH", "/tmp/urr_stats.db")
 
 def db():
     c = sqlite3.connect(DB)
