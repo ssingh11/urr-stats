@@ -6,9 +6,15 @@ app = Flask(__name__)
 DB = os.environ.get("DB_PATH", "/tmp/urr_stats.db")
 
 def db():
-    c = sqlite3.connect(DB)
+
+    import os
+    db_path = DB
+    os.makedirs(os.path.dirname(db_path), exist_ok=True) if os.path.dirname(db_path) else None
+    c = sqlite3.connect(db_path)
     c.row_factory = sqlite3.Row
     return c
+
+print("Using DB:", DB)
 
 def init():
     with db() as c:
