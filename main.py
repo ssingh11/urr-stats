@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, Response
 
 app = Flask(__name__)
 DB = os.environ.get("DB_PATH", "/tmp/urr_stats.db")
+API_KEY = os.environ.get("API_KEY")
 
 def db():
 
@@ -51,6 +52,9 @@ def health():
 
 @app.post("/event")
 def event():
+    if API_KEY and request.headers.get("X-API-Key") != API_KEY:
+        return jsonify({"error": "unauthorized"}), 401
+    
     d = request.get_json(silent=True) or {}
     doi, status, source = d.get("doi","").strip(), d.get("status",""), d.get("source","")
     if not doi.startswith("10.") or status not in ("verified","hallucinated","error"):
