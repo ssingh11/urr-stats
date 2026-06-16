@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>URR Citation Verifier — Live Stats</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0d0d1a;color:#e8e8f0;min-height:100vh}
+.header{background:#1a1a2e;padding:20px 32px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #2a2a4e}
+.logo{font-size:28px}.header h1{font-size:18px;font-weight:600}
+.sub{font-size:12px;color:#888;margin-top:2px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#28a745;animation:pulse 2s infinite;margin-left:auto}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;padding:32px;max-width:1100px;margin:0 auto}
+.card{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:10px;padding:20px 24px}
+.card .n{font-size:40px;font-weight:700;line-height:1;margin-bottom:4px}
+.card .l{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em}
+.blue{color:#4fa3e3}.green{color:#4caf7d}.red{color:#e35f5f}.yellow{color:#f0b429}
+.section{max-width:1100px;margin:0 auto;padding:0 32px 32px}
+.section h2{font-size:13px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.fake-list{background:#1a1a2e;border:1px solid #2a2a4e;border-radius:10px;overflow:hidden}
+.fake-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #22223a;font-size:13px}
+.fake-row:last-child{border-bottom:none}
+.fake-doi{font-family:monospace;color:#e35f5f;flex:1}
+.bar-wrap{width:120px;background:#22223a;border-radius:3px;height:6px;overflow:hidden}
+.bar{height:6px;background:#e35f5f;border-radius:3px;transition:width .5s}
+.updated{font-size:11px;color:#444;margin-top:8px}
+.footer{text-align:center;padding:20px;color:#444;font-size:11px}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="logo">🔬</span>
+  <div><h1>URR Citation Verifier — Live Stats</h1>
+  <p class="sub">Opt-in telemetry · CrossRef + DataCite · open-source</p></div>
+  <div class="live-dot"></div>
+</div>
+<div class="grid">
+  <div class="card"><div class="n blue" id="n-total">–</div><div class="l">Total DOIs checked</div></div>
+  <div class="card"><div class="n green" id="n-verified">–</div><div class="l">Verified real</div></div>
+  <div class="card"><div class="n red" id="n-fake">–</div><div class="l">Hallucinated</div></div>
+  <div class="card"><div class="n yellow" id="n-rate">–</div><div class="l">Hallucination rate</div></div>
+  <div class="card"><div class="n blue" id="n-today">–</div><div class="l">Checked today</div></div>
+</div>
+<div class="section">
+  <h2>Top hallucinated DOIs</h2>
+  <div class="fake-list" id="fake-list"><div class="fake-row" style="color:#444">Loading…</div></div>
+  <p class="updated" id="updated"></p>
+</div>
+<div class="footer">URR is open-source ·
+  <a href="https://github.com/ssingh11/urr-stats" style="color:#4fa3e3">github.com/ssingh11/urr-stats</a> ·
+  DOIs only, no personal data collected
+</div>
+<script>
+function update(s){
+  document.getElementById('n-total').textContent=s.total.toLocaleString();
+  document.getElementById('n-verified').textContent=s.verified.toLocaleString();
+  document.getElementById('n-fake').textContent=s.hallucinated.toLocaleString();
+  document.getElementById('n-rate').textContent=s.hallucination_rate_pct+'%';
+  document.getElementById('n-today').textContent=s.today.toLocaleString();
+  document.getElementById('updated').textContent='Updated '+new Date(s.updated_at).toLocaleTimeString();
+  const max=s.top_hallucinated[0]?.count||1;
+  const list=document.getElementById('fake-list');
+  list.innerHTML=s.top_hallucinated.length
+    ? s.top_hallucinated.map(r=>`<div class="fake-row"><span class="fake-doi">${r.doi}</span>
+        <div class="bar-wrap"><div class="bar" style="width:${Math.round(r.count/max*100)}%"></div></div>
+        <span style="color:#888;font-size:12px">${r.count}×</span></div>`).join('')
+    : '<div class="fake-row" style="color:#444">No data yet</div>';
+}
+const es=new EventSource('/stats/live');
+es.onmessage=e=>update(JSON.parse(e.data));
+es.onerror=()=>setInterval(()=>fetch('/stats').then(r=>r.json()).then(update),10000);
+fetch('/stats').then(r=>r.json()).then(update);
+</script>
+</body>
+</html>
